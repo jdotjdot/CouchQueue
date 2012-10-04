@@ -1,0 +1,8 @@
+
+#.gitignore
+
+node_modules/
+.idea/
+*.log
+thumbs.db
+.DS_Store
