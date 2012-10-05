@@ -27,18 +27,24 @@ Alternatively, you can get the source from [github][3].
 ###Importing
 To use couchQueue, simply `require` it:
 
-    CouchQueue = require("couchQueue");
+```javascript
+CouchQueue = require("couchQueue");
+```
 
 <a name="create"></a>
 ###Setting Up and Creating Your Queue
 
-    queue = new CouchQueue(queueName, hostUrl, port, auth, [config], [debug]);
+```javascript
+queue = new CouchQueue(queueName, hostUrl, port, auth, [config], [debug]);
+```
 
 Example usage:
 
-    queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000, 
-            {username: 'myusername', password: 'mypassword'}, 
-            {order: 'fifo', override: false}, false);
+```javascript
+queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000,
+        {username: 'myusername', password: 'mypassword'},
+        {order: 'fifo', override: false}, false);
+```
 
  - `queueName` (*required*)
   - The name that you're using for your queue.  If this queue or database already exists, you __must__ ensure that the name is identical to the database name.
