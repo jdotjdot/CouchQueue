@@ -1,17 +1,13 @@
 {
   "name": "couchQueue",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "This module can be used to create a queuing system out of a CouchDB database, built using cradle.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "main": "lib/index.js",
   "repository": "",
   "author": "J.J. Fliegelman",
-  "license": "BSD",
+  "license": "MIT",
   "dependencies": {
     "cradle": "~0.6.4",
-    "async": "~0.1.22",
-    "should": "~1.2.0"
+    "async": "~0.1.22"
   }
 }
