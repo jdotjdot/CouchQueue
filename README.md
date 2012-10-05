@@ -19,7 +19,7 @@ The queueing itself is performed using views and map/reduce strategies on those 
 
 npm:
 
-    npm install couchqueue
+    npm install couchQueue
 
 **Note: this is not actually published to npm yet.**<br>
 Alternatively, you can get the source from [github][3].
@@ -62,7 +62,7 @@ queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000,
  - `debug` (*optional*):
    - If you want your queueing activity to log to the console.  Defaults to `false`.
 
-<a name="config"></a>
+<a name="configure"></a>
 ####Config
 
 These config parameters are passed upon the construction of the queue, but since they publicly accessible, you can change these configurations later in your program by changing `queue.config`.  For example:
