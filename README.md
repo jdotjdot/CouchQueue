@@ -6,9 +6,10 @@ A [Node.js][1] queuing system for [CouchDB][2].
 Sometimes, you are unable to or unwilling to use a specialized queuing system like Amazon SQS or Redis for your project.  This project is intended to fill that gap for users of CouchDB.  With couchQueue, you have the ability to:
 
  - [create the queuing database](#create) and [configuring](#configure)
+ - [check if an item exists](#exist)
  - [enqueue items](#enqueue)
- - dequeue items
- - get the next item according to your chosen queuing strategy
+ - [get the next item](#retrieving) according to your chosen queuing strategy
+ - [dequeue items](#dequeue)
 
 The queuing itself is performed using views and map/reduce strategies on those views.
 
@@ -20,7 +21,8 @@ npm:
 
     npm install couchqueue
 
-Alternatively, you can get it from the [github][3].
+**Note: this is not actually published to npm yet.**
+Alternatively, you can get the source from [github][3].
 
 ###Importing
 To use couchQueue, simply `require` it:
@@ -30,12 +32,12 @@ To use couchQueue, simply `require` it:
 <a name="create"></a>
 ###Setting Up and Creating Your Queue
 
-    queue = new CouchQueue(queueName, hostUrl, port, auth, config, debug);
+    queue = new CouchQueue(queueName, hostUrl, port, auth, [config], [debug]);
 
 Example usage:
 
-    queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000,
-            {username: 'myusername', password: 'mypassword'},
+    queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000, 
+            {username: 'myusername', password: 'mypassword'}, 
             {order: 'fifo', override: false}, false);
 
  - `queueName` (*required*)
@@ -58,10 +60,10 @@ Example usage:
 ####Config
 
 These config parameters are passed upon the construction of the queue, but since they publicly accessible, you can change these configurations later in your program by changing `queue.config`.  For example:
-
+   
 ```javascript
     queue.config.order = 'lifo';
-```
+```    
 
 
 
@@ -79,14 +81,141 @@ These config parameters are passed upon the construction of the queue, but since
 - `false` is the default behavior of only enqueuing items if they are not already present in the database.  This way, dequeued items are not re-enqueued.  `true` disables this protection.
 - You have the option of overriding the `config.override` setting on an individual basis when calling `queue.enqueue(...)` or `queue.enqueueMany(...)` by passing it a separate configuration object.
 
+<a name="exist"></a>
+###Exists
+####Exists and is Queued
+```javascript
+queue.checkIfItemIsQueued(message, callback);
+```
+
+Example:
+```javascript
+queue.checkIfItemIsQueued('ID3445', function(error, isIt) {
+    if (!!err) {
+        if (err.hasOwnProperty('reason') && err.reason === 'missing') {
+            console.log("Item isn't in the database.  Should have called queue.checkIfItemExists!");
+        } else {
+            handleError(error);
+        }
+    } else {
+        if (isIt) {
+            console.log("The item is queued!");
+        } else {
+            console.log("The item is not queued.");
+        }
+    }
+});
+```
+- `message` (*required*)
+  - The name or ID of the item you're checking to see is queued.
+- `callback` (*required*)
+  - A callback in form `callback(err, response)`, where `response` will be `true` or `false`, depending on whether it's queued or not.
+
+If the item actually isn't in the database at all, `error` will be returned as `{ error: 'not_found', reason: 'missing' }` and `response` will be `null`.  Do not use this function to check if the item is in the database, use `queue.checkIfItemExists(...)` instead.
+
+####Exists in the Database
+```javascript
+queue.checkIfItemExists(message, callback)
+```
+Example:
+```javascript
+queue.checkIfItemExists('ID33445', function(error, isThere){
+    if (isThere) {
+        console.log("The item is in the queue database!");
+    } else {
+        console.log("Aw, it's not in the queue database...");
+    }
+});
+```
+Note: this function will tell you whether the specified item is in the database, **not** whether or not it is queued.
+
+- `message` (*required*)
+  - The name or ID of the item you're checking to see is in the database.
+- `callback` (*required*)
+  - A callback in form `callback(err, response)`, where `response` will be `true` or `false`, depending on if it's in the database or not.
+
 <a name="enqueue"></a>
 ###Enqueuing
+####queue.enqueue
+```javascript
+queue.enqueue(message, [config], [callback]);
+```
 
+Examples:
+```javascript
+queue.enqueue('33124');
+queue.enqueue('34234', {override: true});
+queue.enqueue('myusername', function (err, response) {...});
+queue.enqueue('96884', {override: false}, function (err, response) {...});
+```
 
+- `message` (*required*) (**string**)
+ -  The item that you intend to queue.  This will be used as the document's `_id` in the CouchDB database.
+-  `config` (*optional*)
+ -  Configuration parameter that for this function call overrides `queue.config`.
+ -  Options: `{ override: [true | false] }`
+- `callback` (*optional, but suggested*)
+ - Callback function of form `callback(error, response)`.
+
+####queue.enqueueMany
+```javascript
+queue.enqueueMany(messages, [config], [callback]);
+```
+
+Same as `queue.enqueue(...)`, except `messages`should be a list of string items that you intend to queue.  The optional local configuration will apply to all of these items, and the callback will be called only upon the completion of all enqueuings.
+`messages` can also be passed as a single string item, just like `queue.enqueue(...)`.
+
+Examples:
+```javascript
+queue.enqueueMany(['1', '2', '3'], {override: true});
+queue.enqueueMany('john', function (error, response) {...});
+```
+
+<a name="retrieving"></a>
+###Retrieving Records
+<a name="nextItem"></a>
+####Strategy-Independent Function
+```javascript
+queue.nextItem(callback)
+```
+Example:
+```javascript
+queue.nextItem(function (err, doc) {
+    runScraper(doc._id);
+});
+```
+- Takes a required callback of form `callback(err, doc)`, where `doc` is the retrieved CouchDB document.  The document's name or ID that you used to queue it can be retrieved with `doc._id`, and any other parameters like `doc.insert_time`, `doc.queued`, and `doc.dequeue_time` can be retrieved similarly.
+- This function retrieves the next item randomly, by FIFO, or by LIFO according to the queue's global `queue.config`.
+
+####Strategy-Specific Functions
+```javascript
+queue.randomNext(callback);
+queue.fifoNext(callback);
+queue.lifoNext(callback);
+```
+Each of these follows the same rules as [`queue.nextItem(...)`](#nextItem), except that they will use the specified ordering strategy, no matter what `queue.config.order` says.
+
+<a name="dequeue"></a>
+###Dequeuing
+```javascript
+queue.dequeue(message, [callback]);
+```
+
+Example:
+```javascript
+queue.dequeue('12345', function(err, reponse) {...});
+```
+Note that the dequeued item *will continue to be in the database*, but will be removed from the queue itself by having the documents `queued` parameter set to `false` and the views updated accordingly.
+
+- `message` (*required*)
+  - The item name or ID that you intend to dequeue from the queue.
+- `callback` (*optional*)
+  - A callback function in form `callback(error, response)`.
 ##Future Releases
 For future versions, I hope to add the following features:
 
 - Ability to add your own custom queuing strategies in addition to random, FIFO, and LIFO
+- Dequeuing more than one item at once
 
 [1]: http://nodejs.org/
 [2]: http://couchdb.apache.org/
