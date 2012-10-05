@@ -5,10 +5,30 @@ var cradle = require("cradle"),
     async = require("async");
 
 var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
-    "use strict";
+    /* Config options:
+    *    order: "FIFO", "LIFO", "random" (default 'random')
+    *    override: true, false (default false)
+    *
+    * */
 
-    if (!debug) { debug = false; }
+    "use strict";
+    [queueName, hostUrl, port, auth].forEach(function(item) {
+        if (!item) {
+            throw {name: "variableError", message: "queueName, hostUrl, port, and auth are all required variables."};
+        }
+    });
+
+    // Setup
     var thisQueue = this;
+    if (!debug) { debug = false; }
+    this.debug = debug;
+    if (!!config) {
+        this.config = config;
+    } else {
+        this.config = {};
+    }
+    if (!this.config.order) { this.config.order = 'random'; }
+    if (!this.config.override) { this.config.override = false; }
     this.db = new (cradle.Connection)(hostUrl, port, {auth: auth}).database(queueName);
 
     // Check if database exists; if not, create it
@@ -20,8 +40,8 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
                 callback(err);
             } else if (!(exists)) {
                 thisQueue.db.create(function (err, response) {
-                    if (response.ok === true) {
-                        thisQueue.db.save('_dseign/queue', {
+                    if (response['ok'] === true) {
+                        thisQueue.db.save('_design/queue', {
                             queued: {
                                 map: function (doc) {
                                     if (doc.queued) { emit(doc.insert_time, doc._id); }
@@ -47,7 +67,7 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
                             to limit possible concurrency/redundancy issues that another
                             worker might call up the item while the first worker is still
                             working */
-                            next: {
+                            randomNext: {
                                 map: function (doc) {
                                     var randomNumber = Math.floor(Math.random() * 1000000000);
                                     if (doc.queued && doc.insert_time) {
@@ -57,7 +77,16 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
 
                                 // Rather than have a reduce function here, we'll have
                                 //  the calling function demand a random start_key
+                            },
+
+                            fifoNext: {
+                                map: function (doc) {
+                                    if (doc.queued && doc.insert_time) {
+                                        emit(doc.insert_time, doc._id);
+                                    }
+                                }
                             }
+
                         }, function (err, response) {
                             if (!!callback) { callback(err); }
                         });
@@ -81,45 +110,69 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
         });
     };
 
-    // Consider changing 'override' to a config parameter?
-    this.enqueue = function (message, override, callback) {//callback(err, response)
+    this.enqueue = function (message, config, callback) {//callback(err, response)
+        /* config parameters:
+        *       override: true, false (default false)
+        *
+        * */
+
+
+        //In case config wasn't provided but callback was:
+        if (typeof arguments['1'] === 'function' && !arguments.hasOwnProperty('2')) {
+            callback = config;
+            config = thisQueue.config;
+        } else if (!config) {
+            config = thisQueue.config
+        }
+
+
         var now, saveItem;
         now = new Date();
-        saveItem = function () {
+        saveItem = function (callback) {
             thisQueue.db.save(message, {queued: true, insert_time: now},
                 function (err, response) {
-                    if (debug) { console.log('couchQueue ' + queueName + ': queued ' + message); }
+                    if (debug) { console.log('couchQueue ' + queueName + ': queued ' + message + '.'); }
                     if (!!callback) {
                         callback(err, response);
                     }
                 });
         };
 
-        if (!override) {
+        if (typeof config === 'undefined' || config === null || !config.hasOwnProperty('override') ||
+            (config.hasOwnProperty('override') && !config.override)) {
             thisQueue.checkIfItemExists(message, function (err, response) {
                 if (!(response)) {
                     // Only enqueue if item DOESN'T exist, so we don't requeue dequeued items
-                    saveItem();
+                    saveItem(callback);
                 } else {
                     if (debug) { console.log('couchQueue ' + queueName + ': ' + message +
                                              ' is already present in the queue.'); }
+                    callback(err, response);
                 }
             });
         } else {
-            saveItem();
+            saveItem(callback);
         }
     };
 
-    this.enqueueMany = function (messages, callback) {//callback(err, response)
+    this.enqueueMany = function (messages, config, callback) {//callback(err, response)
         if (Object.prototype.toString.call(messages) === '[object String]') {
             messages = [messages];
+        }
+
+        //In case config wasn't provided but callback was:
+        if (typeof arguments['1'] === 'function' && !arguments.hasOwnProperty('2')) {
+            callback = config;
+            config = thisQueue.config;
+        } else if (!config) {
+            config = thisQueue.config
         }
 
         var runList = [];
         messages.forEach(function (item) {
             runList.push(
                 function (cb) {
-                    thisQueue.enqueue(item, function (err, response) {
+                    thisQueue.enqueue(item, config, function (err, response) {
                         // This is redundant, but for clarity
                         cb(err, response);
                     });
@@ -127,10 +180,9 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
             );
         });
 
-        //TODO: test this
         async.parallel(runList, function (err, results) {
             // This is redundant, but for clarity
-            callback(err, results);
+            if (!!callback) { callback(err, results); }
         });
     };
 
@@ -145,33 +197,85 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
                         callback(err, response);
                     }
                 });
+            } else {
+                throw {name: 'ItemDoesntExistError', message: 'Item ' + message + ' does not exist to dequeue.'}
             }
         });
     };
 
-    this.nextItem = function (callback) {//callback(err, doc)
+    var checkCallback = function(callback, name) {
+        if (typeof callback !== 'function') {
+            throw {name: 'CallbackError', message: 'You must provide a callback function for ' + name + '.'}
+        }
+    };
+
+    this.randomNext = function (callback) {//callback(err, doc)
+        checkCallback(callback, 'randomNext');
         var randomNumber = Math.floor(Math.random() * 1000000000);
-        this.db.view('queue/next', {startkey: randomNumber, limit: 1},
-            function (err, response) {
-                /* If there's no item above that queue ID, wrap around to the beginning,
-                 *  but only if there are objects left in the queue (ie numberQueued > 0) */
-                if (response === []) {
-                    thisQueue.db.view('queue/numberQueued', function (err, response) {
-                        if (err !== null) {
-                            callback(err, null);
-                        } else {
-                            if (response[0].value > 0) {
-                                thisQueue.db.view('queue/next', {startkey: 0, limit: 1},
-                                    function (err, doc) {
-                                        callback(err, doc);
-                                    });
-                            }
-                        }
-                    });
+        this.db.view('queue/randomNext', {startkey: randomNumber, limit: 1},
+            function (err, doc) {
+                // If there's no item above that queue ID, wrap around to the beginning,
+                if (doc === []) {
+                    thisQueue.db.view('queue/randomNext', {startkey: 0, limit: 1},
+                        function (err, doc) {
+                            callback(err, doc);
+                        });
                 } else {
-                    callback(err, response);
+                    callback(err, doc);
                 }
             });
+    };
+
+    this.fifoNext = function (callback) {//callback(err, doc)
+        checkCallback(callback, 'fifoNext');
+        this.db.view('queue/fifoNext', {limit: 1}, function (err, doc) {
+            callback(err, doc);
+        });
+    };
+
+    this.lifoNext = function (callback) {//callback(err, doc)
+        checkCallback(callback, 'lifoNext');
+        this.db.view('queue/fifoNext', {limit: 1, descending: true}, function (err, doc) {
+            callback(err, doc);
+        });
+    };
+
+    this.nextItem = function (callback) {//callback(err, doc)
+        checkCallback(callback, 'nextItem');
+        // Check to make sure there are items left in the queue
+        thisQueue.db.view('queue/numberQueued', function (err, response) {
+            if (err !== null) {
+                callback(err, null);
+            } else {
+                if (response[0].value > 0) {
+                    if (!!thisQueue.config && thisQueue.config.hasOwnProperty('order')) {
+                        switch (thisQueue.config.order.toLowerCase()) {
+                            case 'random':
+                            case 'r':
+                                thisQueue.randomNext(callback);
+                                break;
+                            case 'fifo':
+                                thisQueue.fifoNext(callback);
+                                break;
+                            case 'lifo':
+                                thisQueue.lifoNext(callback);
+                                break;
+                            default:
+                                throw {name: 'OrderConfigError',
+                                    message: 'The order config option "' +
+                                        thisQueue.config.order + '" does not exist.'};
+                                break;
+                        }
+                    }
+                } else {
+                    //if there are no items queued left
+                    throw {name: 'NoItemsQueuedError', message: 'There are no items left to be queued.'};
+                }
+            }
+        });
+
+
+
     };
 };
 

@@ -11,6 +11,7 @@
   "license": "BSD",
   "dependencies": {
     "cradle": "~0.6.4",
-    "async": "~0.1.22"
+    "async": "~0.1.22",
+    "should": "~1.2.0"
   }
 }
