@@ -1,11 +1,21 @@
 {
   "name": "couchQueue",
-  "version": "0.0.2",
-  "description": "This module can be used to create a queuing system out of a CouchDB database, built using cradle.",
+  "version": "0.0.2-beta",
+  "description": "A Node.js queueing system for CouchDB to make queues out of individual CouchDB databases.",
   "main": "lib/index.js",
-  "repository": "",
-  "author": "J.J. Fliegelman",
+  "author": {
+      "name": "J.J. Fliegelman",
+      "email": "JJ@ebnj.net"
+  },
+  "bugs": "https://github.com/jdotjdot/couchQueue",
   "license": "MIT",
+  "directories": {
+      "lib": "./lib"
+  },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/jdotjdot/couchQueue"
+  },
   "dependencies": {
     "cradle": "~0.6.4",
     "async": "~0.1.22"

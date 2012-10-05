@@ -1,4 +1,14 @@
-node_modules
+
+#.npmignore
+
+# Node
+node_modules/
 npm-debug.log
-test/fixtures/README.md
-test/fixtures/not-found.txt
+
+# WebStorm
+projectFilesBackup/
+.idea/
+
+# Other
+test/privatetest.js
+.gitignore

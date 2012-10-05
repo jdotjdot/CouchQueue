@@ -1,8 +1,10 @@
 
 #.gitignore
 
+projectFilesBackup/
 node_modules/
 .idea/
 *.log
 thumbs.db
 .DS_Store
+test/privatetest.js

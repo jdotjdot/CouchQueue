@@ -11,7 +11,7 @@ Sometimes, you are unable to or unwilling to use a specialized queuing system li
  - [get the next item](#retrieving) according to your chosen queuing strategy
  - [dequeue items](#dequeue)
 
-The queuing itself is performed using views and map/reduce strategies on those views.
+The queueing itself is performed using views and map/reduce strategies on those views.
 
 ##Detail
 
@@ -21,7 +21,7 @@ npm:
 
     npm install couchqueue
 
-**Note: this is not actually published to npm yet.**
+**Note: this is not actually published to npm yet.**<br>
 Alternatively, you can get the source from [github][3].
 
 ###Importing
@@ -58,8 +58,9 @@ queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000,
   - Optional parameters that you may pass to your queue instance to configure its behavior.  Current options are:
      -  `order`: `'random'`, `'lifo'`, or `'fifo'`.  Defaults to `'random'`.  See [below](#config) for more detail.
      -  `override`: `true` or `false`.  Defaults to `false`.
+  - To pass empty but still provide a value for `debug`, pass `config` as `{}`.
  - `debug` (*optional*):
-   - If you want your queuing activity to log to the console.  Defaults to `false`.
+   - If you want your queueing activity to log to the console.  Defaults to `false`.
 
 <a name="config"></a>
 ####Config
@@ -75,15 +76,16 @@ These config parameters are passed upon the construction of the queue, but since
 `config.order`
 
 - Options: `'random'`, `'fifo'`, `'lifo'`.  **Default:** `'random'`.
-- This determines the queuing strategy that your queue will use to deliver items when `queue.nextItem(...)` is called.
+- These options can be abbreviated as `'r'`, `'f'`, and `'l'`.
+- This determines the queueing strategy that your queue will use to deliver items when `queue.nextItem(...)` is called.
 - `'random'` means that your still-queued items will be returned in a random order.  `'fifo'` stands for "**F**irst **I**n **F**irst **O**ut", and `'lifo'` stands for "**L**ast **I**n **F**irst **O**ut".  These two strategies use a timestamp attached to the items when they are enqueued using `queue.enqueue(...)`.
 - Alternatively, you can select one of the strategies for individual item retrievals by calling `queue.randomNext(...)`, `queue.fifoNext(...)`, or `queue.lifoNext(...)`.
 
 `config.override`
 
 - Options: `true` and `false`.  **Default:** `false`.
-- This determines whether `queue.enqueue(...)` and `queue.enqueueMany(...)` will re-enqueue an item if it already appears in the database and you try to enqueue it.  Be careful when setting this to `true`, because you may accidentally be re-enqueuing items that have already been dequeued.
-- `false` is the default behavior of only enqueuing items if they are not already present in the database.  This way, dequeued items are not re-enqueued.  `true` disables this protection.
+- This determines whether `queue.enqueue(...)` and `queue.enqueueMany(...)` will re-enqueue an item if it already appears in the database and you try to enqueue it.  Be careful when setting this to `true`, because you may accidentally be re-enqueueing items that have already been dequeued.
+- `false` is the default behavior of only enqueueing items if they are not already present in the database.  This way, dequeued items are not re-enqueued.  `true` disables this protection.
 - You have the option of overriding the `config.override` setting on an individual basis when calling `queue.enqueue(...)` or `queue.enqueueMany(...)` by passing it a separate configuration object.
 
 <a name="create"></a>
@@ -94,7 +96,7 @@ queue.createQueue([callback]);
 ```
 - This function takes an optional callback of form `callback(error)`.
 
-Please note that this method should (and can) only be called **one** time, when you are creating the queue, and **should not** be called in production.  You should run this function once separately before running any other code that relies on couchQueue, sinc otherwise the other functions will have no database to refer to.  It is not recommended to set up the database yourself in CouchDB, since you might not get the views exactly as CouchDB needs them.  You can, of course, add additional views to your CouchDB database, so long as they don't override any of the view names that couchQueue uses.
+Please note that this method should (and can) only be called **one** time, in isolation, when you are creating the queue, and **should not** be called in production.  You should run this function once separately before running any other code that relies on couchQueue, sinc otherwise the other functions will have no database to refer to.  It is not recommended to set up the database yourself in CouchDB, since you might not get the views exactly as CouchDB needs them.  You can, of course, add additional views to your CouchDB database, so long as they don't override any of the view names that couchQueue uses.
 
 <a name="exist"></a>
 ###Exists
@@ -150,7 +152,7 @@ Note: this function will tell you whether the specified item is in the database,
   - A callback in form `callback(err, response)`, where `response` will be `true` or `false`, depending on if it's in the database or not.
 
 <a name="enqueue"></a>
-###Enqueuing
+###Enqueueing
 ####queue.enqueue
 ```javascript
 queue.enqueue(message, [config], [callback]);
@@ -177,7 +179,7 @@ queue.enqueue('96884', {override: false}, function (err, response) {...});
 queue.enqueueMany(messages, [config], [callback]);
 ```
 
-Same as `queue.enqueue(...)`, except `messages`should be a list of string items that you intend to queue.  The optional local configuration will apply to all of these items, and the callback will be called only upon the completion of all enqueuings.
+Same as `queue.enqueue(...)`, except `messages`should be a list of string items that you intend to queue.  The optional local configuration will apply to all of these items, and the callback will be called only upon the completion of all enqueueings.
 `messages` can also be passed as a single string item, just like `queue.enqueue(...)`.
 
 Examples:
@@ -211,7 +213,7 @@ queue.lifoNext(callback);
 Each of these follows the same rules as [`queue.nextItem(...)`](#nextItem), except that they will use the specified ordering strategy, no matter what `queue.config.order` says.
 
 <a name="dequeue"></a>
-###Dequeuing
+###Dequeueing
 ```javascript
 queue.dequeue(message, [callback]);
 ```
@@ -229,8 +231,8 @@ Note that the dequeued item *will continue to be in the database*, but will be r
 ##Future Releases
 For future versions, I hope to add the following features:
 
-- Ability to add your own custom queuing strategies in addition to random, FIFO, and LIFO
-- Dequeuing more than one item at once
+- Ability to add your own custom queueing strategies in addition to random, FIFO, and LIFO
+- Dequeueing more than one item at once
 
 [1]: http://nodejs.org/
 [2]: http://couchdb.apache.org/
