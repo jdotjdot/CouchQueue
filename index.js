@@ -98,6 +98,22 @@ var couchQueue = function (queueName, hostUrl, port, auth, config, debug) {
         });
     };
 
+    this.checkIfItemIsQueued = function (message, callback) {//callback(err, response)
+        thisQueue.db.get(message, function(err, doc) {
+            if (!err) {
+                var out;
+                if (doc.hasOwnProperty('queued') && doc.queued !== null) {
+                    out = doc.queued;
+                } else {
+                    out = null;
+                }
+                callback(err, out);
+            } else {
+                callback(err, null);
+            }
+        });
+    };
+
     this.checkIfItemExists = function (message, callback) {//callback(err, response)
         thisQueue.db.get(message, function (err, doc) {
             if (typeof doc !== 'undefined') {
