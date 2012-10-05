@@ -34,9 +34,11 @@ To use couchQueue, simply `require` it:
 
 Example usage:
 
-    queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000, 
-            {username: 'myusername', password: 'mypassword'}, 
-            {order: 'fifo', override: false}, false);
+```javascript
+queue = new CouchQueue('idQueue', 'mycouch.cloudapp.net', 3000, 
+        {username: 'myusername', password: 'mypassword'}, 
+        {order: 'fifo', override: false}, false);
+```
 
  - `queueName` (*required*)
   - The name that you're using for your queue.  If this queue or database already exists, you __must__ ensure that the name is identical to the database name.
