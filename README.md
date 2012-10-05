@@ -31,8 +31,7 @@ To use couchQueue, simply `require` it:
 CouchQueue = require("couchQueue");
 ```
 
-<a name="create"></a>
-###Setting Up and Creating Your Queue
+###Setting Up Your Queue
 
 ```javascript
 queue = new CouchQueue(queueName, hostUrl, port, auth, [config], [debug]);
@@ -86,6 +85,16 @@ These config parameters are passed upon the construction of the queue, but since
 - This determines whether `queue.enqueue(...)` and `queue.enqueueMany(...)` will re-enqueue an item if it already appears in the database and you try to enqueue it.  Be careful when setting this to `true`, because you may accidentally be re-enqueuing items that have already been dequeued.
 - `false` is the default behavior of only enqueuing items if they are not already present in the database.  This way, dequeued items are not re-enqueued.  `true` disables this protection.
 - You have the option of overriding the `config.override` setting on an individual basis when calling `queue.enqueue(...)` or `queue.enqueueMany(...)` by passing it a separate configuration object.
+
+<a name="create"></a>
+###Creating Your Queue (if it hasn't been already)
+You only need to create your queue once--this means physically adding it as a database to your CouchDB instance, and setting up all of the views necessary for CouchQueue to work.
+```javascript
+queue.createQueue([callback]);
+```
+- This function takes an optional callback of form `callback(error)`.
+
+Please note that this method should (and can) only be called **one** time, when you are creating the queue, and **should not** be called in production.  You should run this function once separately before running any other code that relies on couchQueue, sinc otherwise the other functions will have no database to refer to.  It is not recommended to set up the database yourself in CouchDB, since you might not get the views exactly as CouchDB needs them.  You can, of course, add additional views to your CouchDB database, so long as they don't override any of the view names that couchQueue uses.
 
 <a name="exist"></a>
 ###Exists
