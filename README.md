@@ -221,13 +221,15 @@ Example:
 ```javascript
 queue.dequeue('12345', function(err, reponse) {...});
 ```
-Note that the dequeued item *will continue to be in the database*, but will be removed from the queue itself by having the documents `queued` parameter set to `false` and the views updated accordingly.
+Note that the dequeued item *will continue to be in the database*, but will be removed from the queue itself by having the document's `queued` parameter set to `false` and the views updated accordingly.
 
 - `message` (*required*)
   - The item name or ID that you intend to dequeue from the queue.
 - `callback` (*optional*)
   - A callback function in form `callback(error, response)`.
+
 ##Future Releases
+
 For future versions, I hope to add the following features:
 
 - Ability to add your own custom queueing strategies in addition to random, FIFO, and LIFO
