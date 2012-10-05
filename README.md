@@ -1,4 +1,4 @@
-#couchQueue
+#CouchQueue
 
 A [Node.js][1] queuing system for [CouchDB][2].
 
@@ -19,16 +19,15 @@ The queueing itself is performed using views and map/reduce strategies on those 
 
 npm:
 
-    npm install couchQueue
+    npm install couchqueue
 
-**Note: this is not actually published to npm yet.**<br>
 Alternatively, you can get the source from [github][3].
 
 ###Importing
-To use couchQueue, simply `require` it:
+To use CouchQueue, simply `require` it:
 
 ```javascript
-CouchQueue = require("couchQueue");
+CouchQueue = require("couchqueue");
 ```
 
 ###Setting Up Your Queue
@@ -96,7 +95,7 @@ queue.createQueue([callback]);
 ```
 - This function takes an optional callback of form `callback(error)`.
 
-Please note that this method should (and can) only be called **one** time, in isolation, when you are creating the queue, and **should not** be called in production.  You should run this function once separately before running any other code that relies on couchQueue, sinc otherwise the other functions will have no database to refer to.  It is not recommended to set up the database yourself in CouchDB, since you might not get the views exactly as CouchDB needs them.  You can, of course, add additional views to your CouchDB database, so long as they don't override any of the view names that couchQueue uses.
+Please note that this method should (and can) only be called **one** time, in isolation, when you are creating the queue, and **should not** be called in production.  You should run this function once separately before running any other code that relies on CouchQueue, sinc otherwise the other functions will have no database to refer to.  It is not recommended to set up the database yourself in CouchDB, since you might not get the views exactly as CouchDB needs them.  You can, of course, add additional views to your CouchDB database, so long as they don't override any of the view names that CouchQueue uses.
 
 <a name="exist"></a>
 ###Exists
@@ -236,4 +235,4 @@ For future versions, I hope to add the following features:
 
 [1]: http://nodejs.org/
 [2]: http://couchdb.apache.org/
-[3]: https://github.com/jdotjdot/couchQueue
+[3]: https://github.com/jdotjdot/CouchQueue

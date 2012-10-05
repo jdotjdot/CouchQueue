@@ -1,5 +1,5 @@
 {
-  "name": "couchQueue",
+  "name": "couchqueue",
   "version": "0.0.2-beta",
   "description": "A Node.js queueing system for CouchDB to make queues out of individual CouchDB databases.",
   "main": "lib/index.js",
