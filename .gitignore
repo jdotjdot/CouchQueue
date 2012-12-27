@@ -1,4 +1,3 @@
-
 #.gitignore
 
 projectFilesBackup/
@@ -8,3 +7,4 @@ node_modules/
 thumbs.db
 .DS_Store
 test/privatetest.js
+.npmignore
